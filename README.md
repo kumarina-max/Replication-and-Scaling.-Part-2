@@ -33,7 +33,9 @@
 Горизонтальный шардинг – внутри каждого кластера данные делятся по строкам на основе хэша первичного ключа (user_id, book_id, shop_id).
 Каждый шард – отдельная база данных (или партиция). Например, Users – 4 шарда, Books – 2 шарда, Shops – 1 (с заделом на рост).
 Запрос по ключу идёт на один шард, что даёт максимальную производительность.
-## Архитектура системы
+
+
+ ## Архитектура системы
 
 ```mermaid
 flowchart TD
@@ -42,20 +44,19 @@ flowchart TD
     A --> D[Кластер Shops]
 
     subgraph B[Кластер Users]
-        B1[Shard 0 (M+S)]
-        B2[Shard 1 (M+S)]
-        B3[Shard 2 (M+S)]
-        B4[Shard 3 (M+S)]
+        B1["Shard 0 (M+S)"]
+        B2["Shard 1 (M+S)"]
+        B3["Shard 2 (M+S)"]
+        B4["Shard 3 (M+S)"]
     end
 
     subgraph C[Кластер Books]
-        C1[Shard 0 (M+S)]
-        C2[Shard 1 (M+S)]
+        C1["Shard 0 (M+S)"]
+        C2["Shard 1 (M+S)"]
     end
 
     subgraph D[Кластер Shops]
-        D1[Shard 0 (M+S)]
-        D2[Shard 1 (M+S) - задел]
+        D1["Shard 0 (M+S)"]
+        D2["Shard 1 (M+S) - задел"]
     end
-```
-                    
+```       
