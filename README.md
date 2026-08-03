@@ -57,6 +57,5 @@ flowchart TD
 
     subgraph D[Кластер Shops]
         D1["Shard 0 (M+S)"]
-        D2["Shard 1 (M+S) - задел"]
     end
-```       
+```
