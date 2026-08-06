@@ -64,8 +64,7 @@ flowchart TD
     Router -->|"user_id"| UsersDB
     Router -->|"book_id"| BooksDB
     Router -->|"shop_id"| ShopsDB
-```
-
+````
 
 ### Режимы работы серверов
 Мастер – Active (чтение+запись), принимает все INSERT/UPDATE/DELETE.
