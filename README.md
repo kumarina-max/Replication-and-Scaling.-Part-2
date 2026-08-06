@@ -95,44 +95,22 @@ shops – данные меняются крайне редко (открыти�
 ````mermaid
 flowchart TD
     Client["Клиентские приложения"]
-    Router["Шардинг-роутер<br>(по ключу: user_id, book_id, shop_id)"]
+    Router["Шардинг-роутер<br>(по ключу: user_id / book_id / shop_id)"]
 
-    subgraph Vertical["Вертикальные домены"]
-        subgraph UsersDB["БД Пользователи"]
-            U0["шард 0<br>Master + Slave"]
-            U1["шард 1<br>Master + Slave"]
-            U2["шард 2<br>Master + Slave"]
-            U3["шард 3<br>Master + Slave"]
-        end
-        subgraph BooksDB["БД Книги"]
-            B0["шард 0<br>Master + Slave"]
-            B1["шард 1<br>Master + Slave"]
-            B2["шард 2<br>Master + Slave"]
-            B3["шард 3<br>Master + Slave"]
-        end
-        subgraph ShopsDB["БД Магазины"]
-            S0["шард 0<br>Master + Slave"]
-            S1["шард 1<br>Master + Slave"]
-            S2["шард 2<br>Master + Slave"]
-            S3["шард 3<br>Master + Slave"]
-        end
+    subgraph UsersDB["БД Пользователей"]
+        U["Шарды 1–4<br>(каждый: Master + Slave)"]
+    end
+
+    subgraph BooksDB["БД Книг"]
+        B["Шарды 1–4<br>(каждый: Master + Slave)"]
+    end
+
+    subgraph ShopsDB["БД Магазинов"]
+        S["Шарды 1–4<br>(каждый: Master + Slave)"]
     end
 
     Client --> Router
     Router -->|"user_id"| UsersDB
     Router -->|"book_id"| BooksDB
     Router -->|"shop_id"| ShopsDB
-
-    U0 -.-> U0_slave["Slave"]
-    U1 -.-> U1_slave["Slave"]
-    U2 -.-> U2_slave["Slave"]
-    U3 -.-> U3_slave["Slave"]
-    B0 -.-> B0_slave["Slave"]
-    B1 -.-> B1_slave["Slave"]
-    B2 -.-> B2_slave["Slave"]
-    B3 -.-> B3_slave["Slave"]
-    S0 -.-> S0_slave["Slave"]
-    S1 -.-> S1_slave["Slave"]
-    S2 -.-> S2_slave["Slave"]
-    S3 -.-> S3_slave["Slave"]
 ```
