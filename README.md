@@ -42,29 +42,30 @@
 
 
  ## Архитектура системы
-
-```mermaid
+ 
+````mermaid
 flowchart TD
-    A[API Gateway / Маршрутизатор] --> B[Кластер Users]
-    A --> C[Кластер Books]
-    A --> D[Кластер Shops]
+    Client["Клиентские приложения"]
+    Router["Шардинг-роутер<br>(по ключу: user_id / book_id / shop_id)"]
 
-    subgraph B[Кластер Users]
-        B1["Shard 0 (M+S)"]
-        B2["Shard 1 (M+S)"]
-        B3["Shard 2 (M+S)"]
-        B4["Shard 3 (M+S)"]
+    subgraph UsersDB["БД Пользователей"]
+        U["Шарды 1–4<br>(каждый: Master + Slave)"]
     end
 
-    subgraph C[Кластер Books]
-        C1["Shard 0 (M+S)"]
-        C2["Shard 1 (M+S)"]
+    subgraph BooksDB["БД Книг"]
+        B["Шарды 1–4<br>(каждый: Master + Slave)"]
     end
 
-    subgraph D[Кластер Shops]
-        D1["Shard 0 (M+S)"]
+    subgraph ShopsDB["БД Магазинов"]
+        S["Шарды 1–4<br>(каждый: Master + Slave)"]
     end
+
+    Client --> Router
+    Router -->|"user_id"| UsersDB
+    Router -->|"book_id"| BooksDB
+    Router -->|"shop_id"| ShopsDB
 ```
+
 
 ### Режимы работы серверов
 Мастер – Active (чтение+запись), принимает все INSERT/UPDATE/DELETE.
@@ -92,25 +93,3 @@ books – чаще читают (поиск, просмотр), но обнов�
 
 shops – данные меняются крайне редко (открытие нового магазина – событие не ежесекундное). Одного шарда с репликой для надёжности вполне достаточно.
 
-````mermaid
-flowchart TD
-    Client["Клиентские приложения"]
-    Router["Шардинг-роутер<br>(по ключу: user_id / book_id / shop_id)"]
-
-    subgraph UsersDB["БД Пользователей"]
-        U["Шарды 1–4<br>(каждый: Master + Slave)"]
-    end
-
-    subgraph BooksDB["БД Книг"]
-        B["Шарды 1–4<br>(каждый: Master + Slave)"]
-    end
-
-    subgraph ShopsDB["БД Магазинов"]
-        S["Шарды 1–4<br>(каждый: Master + Slave)"]
-    end
-
-    Client --> Router
-    Router -->|"user_id"| UsersDB
-    Router -->|"book_id"| BooksDB
-    Router -->|"shop_id"| ShopsDB
-```
