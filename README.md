@@ -86,7 +86,7 @@ Slave(ы) – только чтение (SELECT), разгружают маст�
 
 ````
 Структура проекта
-text
+
 sharding-demo/
 ├── docker-compose.yml
 ├── init/
