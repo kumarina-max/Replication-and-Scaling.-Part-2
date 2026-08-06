@@ -84,6 +84,7 @@ Slave(ы) – только чтение (SELECT), разгружают маст�
 
 ## Задание 3
 
+````
 Структура проекта
 text
 sharding-demo/
@@ -96,4 +97,6 @@ sharding-demo/
 │   └── shops/
 │       └── init.sql
 └── setup-fdw.sql
+````
+
 
