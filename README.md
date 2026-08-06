@@ -209,3 +209,113 @@ volumes:
   shard2_data:
 
 ````
+## init/users/init.sql
+
+````
+CREATE TABLE IF NOT EXISTS users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+````
+
+## init/books/init.sql
+
+
+````
+CREATE TABLE IF NOT EXISTS books (
+    book_id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    author VARCHAR(255),
+    isbn VARCHAR(20) UNIQUE,
+    price DECIMAL(10, 2),
+    published_year INTEGER
+);
+
+````
+
+## init/shops/init.sql
+
+Этот скрипт выполняется на мастере и на обоих шардах, создавая одинаковую структуру таблицы.
+
+
+````
+CREATE TABLE IF NOT EXISTS shops (
+    shop_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    address TEXT,
+    region VARCHAR(50) NOT NULL,
+    phone VARCHAR(20)
+);
+
+````
+
+## setup-fdw.sql
+Этот скрипт выполняется вручную на мастере (postgres-shops-master) после запуска контейнеров. Он настраивает FDW, переименовывает таблицы, создаёт представление и триггер.
+
+````
+-- Подключение к БД shops_db
+\c shops_db;
+
+-- Включение расширения
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+
+-- Создание серверов для шардов
+CREATE SERVER IF NOT EXISTS shard1_server
+    FOREIGN DATA WRAPPER postgres_fdw
+    OPTIONS (host 'postgres-shard1', port '5432', dbname 'shops_db');
+
+CREATE SERVER IF NOT EXISTS shard2_server
+    FOREIGN DATA WRAPPER postgres_fdw
+    OPTIONS (host 'postgres-shard2', port '5432', dbname 'shops_db');
+
+-- Пользовательские маппинги (пароль должен совпадать с указанным в docker-compose.yml)
+CREATE USER MAPPING IF NOT EXISTS FOR postgres
+    SERVER shard1_server
+    OPTIONS (user 'postgres', password 'strongpassword');
+
+CREATE USER MAPPING IF NOT EXISTS FOR postgres
+    SERVER shard2_server
+    OPTIONS (user 'postgres', password 'strongpassword');
+
+-- Переименование локальной таблицы, чтобы освободить имя shops
+ALTER TABLE IF EXISTS shops RENAME TO shops_master;
+
+-- Импорт внешних таблиц из шардов
+IMPORT FOREIGN SCHEMA public FROM SERVER shard1_server INTO public;
+ALTER FOREIGN TABLE shops RENAME TO shops_shard1;
+
+IMPORT FOREIGN SCHEMA public FROM SERVER shard2_server INTO public;
+ALTER FOREIGN TABLE shops RENAME TO shops_shard2;
+
+-- Представление для объединения всех данных
+CREATE OR REPLACE VIEW all_shops AS
+    SELECT * FROM shops_master
+    UNION ALL
+    SELECT * FROM shops_shard1
+    UNION ALL
+    SELECT * FROM shops_shard2;
+
+-- Функция триггера для распределения INSERT
+CREATE OR REPLACE FUNCTION shops_insert_trigger()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.region = 'center' THEN
+        INSERT INTO shops_shard1 VALUES (NEW.*);
+    ELSIF NEW.region = 'siberia' THEN
+        INSERT INTO shops_shard2 VALUES (NEW.*);
+    ELSE
+        RAISE EXCEPTION 'Unknown region: %', NEW.region;
+    END IF;
+    RETURN NULL; -- отмена вставки в локальную таблицу
+END;
+$$ LANGUAGE plpgsql;
+
+-- Триггер на таблице shops_master
+CREATE TRIGGER shops_insert_trigger
+    BEFORE INSERT ON shops_master
+    FOR EACH ROW
+    EXECUTE FUNCTION shops_insert_trigger();
+````
+
